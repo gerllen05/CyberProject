@@ -6,11 +6,11 @@ import tqdm
 
 class Client:
     IP = "127.0.0.1"
-    PORT_MSGS = 8000
-    PORT_FILES = 8070
+    PORT = 8000
     SIZE = 1024
     FORMAT = "utf-8"
     FINISHED = False
+    OPENED_FILE_PATH = ""
 
     def main(self):
         conn_msgs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -22,8 +22,8 @@ class Client:
         while not self.FINISHED: 
             if not connected:
                 try:
-                    conn_msgs.connect((self.IP, self.PORT_MSGS))
-                    print(f"Connected: Client connected to server at {self.IP}:{self.PORT_MSGS}")
+                    conn_msgs.connect((self.IP, self.PORT))
+                    print(f"Connected: Client connected to server at {self.IP}:{self.PORT}")
 
                     # sending client username to a server
                     self.send(conn_msgs, f"Username: {os.getlogin()}") 
@@ -71,28 +71,27 @@ class Client:
                 self.FINISHED = True
                 break
             elif msg == "online":
-                conn_files = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                conn_files.connect((self.IP, self.PORT_FILES))
-                # create thread send files
+                create_thread(self.send_files_thread)
+                # create threads send and get files
             elif msg == '':
                 print("Empty answer...")
             else:
                 print(f"Server: {msg}")
 
-    # *Нужно сделать сенд файлс и гет файлс
-    def file_recv(self, conn):
-        name = conn.recv(self.SIZE).decode(self.FORMAT, errors= 'ignore')
-        print(f"File '{name}' started downloading...")
-        file = open(name, "wb")
-        fbytes = b""
+    def send_files_thread(self):
         while True:
-            data = conn.recv(self.SIZE)
-            fbytes += data
-            if fbytes[-5:] == b"<END>":
-                fbytes = fbytes[:-5]
-                file.write(fbytes)
+            try:
+                conn_files = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                conn_files.connect((self.IP, self.PORT))
+                time.sleep(10)
+                print("file connection established")
                 break
-        file.close()
+            except Exception as e:
+                print(e)
+        while True:
+            time.sleep(0.5)
+            if self.OPENED_FILE_PATH:
+                self.file_send(self.OPENED_FILE_PATH, conn_files)
 
     def file_send(self, path, conn):
         self.send(conn, path)
@@ -104,6 +103,36 @@ class Client:
             file.close()
         except Exception as e:
             print(e)
+
+    def recieve_files_thread(self):
+        try:
+            os.mkdir('Network Drive Files')
+        except:
+            pass
+        while True:
+            while True:
+                try:
+                    conn_files = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    conn_files.connect((self.IP, self.PORT))
+                    time.sleep(2)
+                    break
+                except:
+                    pass
+            self.file_recv(conn_files)
+
+    def file_recv(self, conn):
+        path = conn.recv(self.SIZE).decode(self.FORMAT, errors= 'ignore')
+        print(f"File '{path}' started downloading...")
+        file = open(f'{path}', "wb")
+        fbytes = b""
+        while True:
+            data = conn.recv(self.SIZE)
+            fbytes += data
+            if fbytes[-5:] == b"<END>":
+                fbytes = fbytes[:-5]
+                file.write(fbytes)
+                break
+        file.close()
 
     def send(self, conn, msg):
         conn.send(msg.encode(self.FORMAT, errors= 'ignore'))

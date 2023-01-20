@@ -31,6 +31,7 @@ class Server:
 
     def new_client(self):
         while True:
+            print("waiting for new client")
             conn, addr = self.SERVER.accept()
 
             # recieving client's username
@@ -48,7 +49,7 @@ class Server:
                 if client.ip == ip:
                     for_msgs = False
                     for_files_client_id = self.CLIENTS.index(client)
-
+            print(f"sadfaeweawefad")
             # for conn_msgs
             if for_msgs:
                 client = Client(ip, conn, addr[1], (), 0, username)
@@ -60,9 +61,10 @@ class Server:
             # for conn_files
             else:
                 client = self.CLIENTS[for_files_client_id]
-                upd_client = Client(client.ip, client.conn_msgs, client.port_msgs, conn, addr[1], client.username)
-                self.CLIENTS[client_id] = upd_client
+                port_files = addr[1]
 
+                upd_client = Client(client.ip, client.conn_msgs, client.port_msgs, conn, port_files, client.username)
+                self.CLIENTS[client_id] = upd_client
                 print(f"\n{client_id}. New files connection: {username} - {addr} connected.")
                        
     def get_input(self):
@@ -115,7 +117,7 @@ class Server:
                 password = msg.split()[1]
                 check = db_conn.execute(f'SELECT password FROM Users WHERE login = "{login}"').fetchone() # check if login has already been used
                 if len(login) < 8 or len(password) < 8:
-                    self.send(conn, "In login and password must be 8 or digits.")
+                    self.send(conn, "In login and password must be 8 or more digits.")
                 elif check:
                     self.send(conn, "This login has already been used.")
                 else:
@@ -123,7 +125,6 @@ class Server:
                     db_conn.execute(f'INSERT INTO Users (login, password, clientId, online) VALUES("{login}", "{password}", "{client_id}", "{client.online}")')
                     self.send(conn, "online")
 
-                    # create_thread(self.create_conn_files, (client_id,))
                     create_thread(self.handle_files, (client_id,), name_extra=f"{client.username}")
                     self.send(conn, f"Successefuly registered: login - {login}, password - {password}.")
             elif msg[:5] == "log in":
@@ -138,7 +139,6 @@ class Server:
                     self.send(conn, "online")
                     db_conn.execute(f'SET clientId = {client_id}, online = TRUE FROM Users WHERE login = {login}')
                     
-                    # create_thread(self.create_conn_files, (client_id,))
                     create_thread(self.handle_files, (client_id,), name_extra=f"{client.username}")
                     self.send(conn, f"Successefuly logged in: login - {login}, password - {password}.")
             if client.online:
@@ -153,30 +153,34 @@ class Server:
             self.CLIENTS[client_id] = []
         client.conn_msgs.close()
 
-    def create_conn_files(self, client_id):
-        client = self.CLIENTS[client_id]
-        conn_files, addr_files = self.SERVER.accept()
+    # def create_conn_recv_files(self, client_id):
+    #     client = self.CLIENTS[client_id]
+    #     while True:
+    #         conn_files, addr_files = self.SERVER.accept()
+    #         if not client.ip == addr_files[0]:
+    #             client.conn_msgs.close()
+    #             conn_files.close()
+    #         else:
+    #             port_files = addr_files[1]
+    #             break
 
-        if not client.ip == addr_files[0]:
-            client.conn_msgs.close()
-            conn_files.close()
-        else:
-            port_files = addr_files[1]
-
-        upd_client = Client(client.ip, client.conn_msgs, client.port_msgs, conn_files, port_files, client.username)
-        self.CLIENTS[client_id] = upd_client
-        self.CLIENTS.append(upd_client)
+    #     upd_client = Client(client.ip, client.conn_msgs, client.port_msgs, conn_files, port_files, client.username)
+    #     self.CLIENTS[client_id] = upd_client
+    #     self.CLIENTS.append(upd_client)
 
     def handle_files(self, client_id):
         client = self.CLIENTS[client_id]
-        conn = client.conn_files
         while not self.FINISH:
-            if conn:
-                path = conn.recv(self.SIZE).decode(self.FORMAT, errors= 'ignore')
-                self.file_recv(path, conn)
-                self.file_send_accessed(path)
-                print("File was sent.")
-                time.sleep(0.1)
+            time.sleep(0.5)
+            if client.conn_files:
+                try:
+                    path = client.conn_files.recv(self.SIZE).decode(self.FORMAT, errors= 'ignore')
+                    self.file_recv(path, client.conn_files)
+                    self.file_send_accessed(path)
+                    print("File was sent.")
+                    time.sleep(0.1)
+                except Exception:
+                    pass
 
         print(f"\n{client_id}. {client.username} - {client.ip} disconnecting...")
         self.CLIENTS[client_id] = []
@@ -214,8 +218,8 @@ class Server:
                 conn = self.CLIENTS[client_id].conn_files
                 # sending file
                 try:
-                    name = path.split('\\')[-1]
-                    self.send(conn, name)
+                    # name = path.split('\\')[-1]
+                    self.send(conn, path)
 
                     file = open(path, "rb")
                     data = file.read()

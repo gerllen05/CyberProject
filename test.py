@@ -1,4 +1,5 @@
 import os
-import sqlite3
-
+name = 'asddefeasd'
+file = open(f'Network Drive Files/{name}', "wb")
+file.write(b'1234')
 
