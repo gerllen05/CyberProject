@@ -10,7 +10,7 @@ class Client:
     SIZE = 1024
     FORMAT = "utf-8"
     FINISHED = False
-    OPENED_FILE_PATH = "path.txt"
+    OPENED_FILE_PATH = "popopopa/path.txt"
     FILES_RECV_QUEUE = []
     
     def main(self):
@@ -26,7 +26,7 @@ class Client:
                 print(f"Client connected to server at {self.IP}:{self.PORT}.")
 
                 # sending client username to a server
-                self.send(conn_msgs, f"Username: {os.getlogin()}") 
+                conn_msgs.send(f"Username: {os.getlogin()}".encode(self.FORMAT, errors= 'ignore'))
 
                 conn_files.connect((self.IP, self.PORT))
                 print("File connection established.")
@@ -46,13 +46,13 @@ class Client:
         while True:
             msg = input()
             if msg == "exit":
-                self.FINISHED = True
                 try:
                     self.send(conn_msgs, msg)
                     conn_msgs.close()
                     conn_files.close()
                 except:
                     print("Client didn't connect to a server.")
+                self.FINISHED = True
             elif msg == "threads":
                 print(threading.enumerate())
             elif msg == "help":
@@ -66,51 +66,66 @@ class Client:
     def get_response_thread(self, conn_msgs, conn_files):
         while True:
             msg = conn_msgs.recv(self.SIZE).decode(self.FORMAT, errors= 'ignore')
-            if msg[:6] == "exit":
-                try:
-                    self.FINISHED = True
-                    self.send(conn_msgs, "exit")
-                    conn_msgs.close()
-                    conn_files.close()
-                except:
+            msg_list = msg.split("|")
+            for msg in msg_list:
+                if msg[:6] == "exit":
+                    try:
+                        self.FINISHED = True
+                        self.send(conn_msgs, "exit")
+                        conn_msgs.close()
+                        conn_files.close()
+                    except:
+                        pass
+                    break
+                elif msg == "online":
+                    print("Successefuly logged in.")
+                    time.sleep(1)
+                    create_thread(self.files_send_thread, (conn_msgs, conn_files,))
+                    create_thread(self.files_recv_thread, (conn_files,))
+                elif msg[:4] == "path":
+                    path = msg.replace("path ", "")
+                    if self.FILES_RECV_QUEUE.count(path) == 0:
+                        self.FILES_RECV_QUEUE.append(path)
+                elif msg == '':
                     pass
-                break
-            elif msg == "online":
-                create_thread(self.files_send_thread, (conn_msgs, conn_files,))
-                create_thread(self.files_recv_thread, (conn_files,))
-            elif msg[:4] == "path":
-                path = msg.replace("path ", "")
-                if self.FILES_RECV_QUEUE.count(path) == 0:
-                    self.FILES_RECV_QUEUE.append(path)
-            elif msg == '':
-                print("Empty answer...")
-            else:
-                print(f"Server: {msg}")
+                else:
+                    print(f"Server: {msg}")
 
     def files_send_thread(self, conn_msgs, conn_files):
+        previous_data = b""
+        previous_file_path = self.OPENED_FILE_PATH
         while True:
             if self.OPENED_FILE_PATH:
-                print(f"File '{self.OPENED_FILE_PATH}' started sending...")
-                self.send(conn_msgs, "path " + self.OPENED_FILE_PATH)
-                time.sleep(0.1)
                 try:
                     file = open(self.OPENED_FILE_PATH, "rb")
                     data = file.read()
-                    conn_files.sendall(data)
-                    conn_files.send(b"<END>")
+                    # print(previous_data)
+                    if (not data == previous_data) and previous_file_path == self.OPENED_FILE_PATH:
+                        print(f"File '{self.OPENED_FILE_PATH}' started sending...")
+                        self.send(conn_msgs, "path " + self.OPENED_FILE_PATH)
+                        conn_files.sendall(data)
+                        conn_files.send(b"<END>")
+                        previous_data = data
+                        previous_file_path = self.OPENED_FILE_PATH
                     file.close()
                 except Exception as e:
                     pass
             time.sleep(0.3)
 
     def files_recv_thread(self, conn_files):
-        try:
-            os.mkdir('Network Drive Files')
-        except:
-            pass
         while True:
             try:
                 path = self.FILES_RECV_QUEUE[0]
+                name = path.split('/')[-1]
+                try:
+                    dirs = ""
+                    for dir in path.replace(name, "").split('/'):
+                        if dir:
+                            dirs += dir + "/"
+                            print(dirs)
+                            os.mkdir(dirs)
+                except:
+                    pass
                 # print(f"File '{path}' started downloading...")
                 file = open(f'{path}', "wb")
                 fbytes = b""
@@ -128,6 +143,7 @@ class Client:
                 time.sleep(0.1)
             
     def send(self, conn, msg):
+        msg = msg + "|"
         conn.send(msg.encode(self.FORMAT, errors= 'ignore'))
 
 def create_thread(thread_function, args=(), daemon_state='True', name_extra='', start='True'):

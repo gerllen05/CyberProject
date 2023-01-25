@@ -22,9 +22,13 @@ class Server:
         self.SERVER.listen()
         print(f"Listening: {self.IP}:{self.PORT}")
 
+        try:
+            os.mkdir(f'users')
+        except:
+            pass
+
         create_thread(self.new_client_thread)
         create_thread(self.get_input_thread)
-        create_thread(self.files_send_queue_updater_thread)
 
         #when the loop finishes, all daemon threads will close
         while not self.FINISH:
@@ -116,63 +120,87 @@ class Server:
         client = self.CLIENTS[client_id]
         conn = client.conn_msgs
         db_conn = sqlite3.connect('Server.db')
-        while not self.FINISH:
+        exit = False
+        while not exit:
             msg = conn.recv(self.SIZE).decode(self.FORMAT, errors= 'ignore')
-            if msg == "exit":
-                break
-            elif msg[:3] == "reg":
-                msg = msg.replace("reg ", "")
-                login = msg.split()[0]
-                password = msg.split()[1]
-                check = db_conn.execute(f'SELECT password FROM Users WHERE login = "{login}"').fetchone() # check if login has already been used
-                if len(login) < 8 or len(password) < 8:
-                    self.send(conn, "In login and password must be 8 or more digits.")
-                elif check:
-                    self.send(conn, "This login has already been used.")
-                else:
-                    client.online = True
-                    db_conn.execute(f'INSERT INTO Users (login, password, clientId) VALUES("{login}", "{password}", "{client_id}")')
-                    db_conn.commit()
-                    self.send(conn, "online")
+            msg_list = msg.split("|")
+            for msg in msg_list:
+                if msg:
+                    if msg == "exit":
+                        exit = True
+                        break
+                    elif msg[:3] == "reg":
+                        msg = msg.replace("reg ", "")
+                        login = msg.split()[0]
+                        password = msg.split()[1]
+                        check = db_conn.execute(f'SELECT password FROM Users WHERE login = "{login}"').fetchone() # check if login has already been used
+                        if len(login) < 8 or len(password) < 8:
+                            self.send(conn, "In login and password must be 8 or more digits.")
+                        elif check:
+                            self.send(conn, "This login has already been used.")
+                        else:
+                            db_conn.execute(f'INSERT INTO Users (login, password, clientId) VALUES("{login}", "{password}", "{client_id}")')
+                            db_conn.commit()
+                            client = self.CLIENTS[client_id]
+                            client.online = True
+                            self.send(conn, "online")
 
-                    create_thread(self.files_send_thread, (client_id,), name_extra=f"{client.username}")
-                    create_thread(self.files_recv_thread, (client_id,), name_extra=f"{client.username}")
-                    self.send(conn, f"Successefuly registered: login - {login}, password - {password}.")
-            elif msg[:6] == "log in":
-                msg = msg.replace("log in ", "")
-                login = msg.split()[0]
-                password = msg.split()[1]
-                print(login)
-                print(password)
-                userId = db_conn.execute(f'SELECT userId FROM Users WHERE login = "{login}" AND password = "{password}"').fetchone()[0]
-                previous_client_id = db_conn.execute(f'SELECT clientId FROM Users WHERE userId = {userId}').fetchone()[0]
-                print(previous_client_id)
-                if not userId:
-                    self.send(conn, "Login or password is wrong.")
-                else:
-                    client.online = True
-                    db_conn.execute(f'UPDATE Users SET clientId = {client_id} WHERE userId = {userId}')
-                    db_conn.commit()
+                            os.mkdir(f'users/{login}')
+                            create_thread(self.files_send_thread, (client_id,), name_extra=f"{client.username}")
+                            create_thread(self.files_recv_thread, (client_id,), name_extra=f"{client.username}")
+                            print(conn, f"Successefuly registered: login - {login}, password - {password}.")
+                    elif msg[:6] == "log in":
+                        msg = msg.replace("log in ", "")
+                        login = msg.split()[0]
+                        password = msg.split()[1]
+                        print(f"Logging in: login - {login}, password - {password}...")
+                        userId = db_conn.execute(f'SELECT userId FROM Users WHERE login = "{login}" AND password = "{password}"').fetchone()
+                        # previous_client_id = db_conn.execute(f'SELECT clientId FROM Users WHERE userId = {userId}').fetchone()[0]
+                        if not userId:
+                            self.send(conn, "Login or password is wrong.")
+                            print("No such user.")
+                        else:
+                            db_conn.execute(f'UPDATE Users SET clientId = {client_id} WHERE userId = {userId[0]}')
+                            db_conn.commit()
+                            client = self.CLIENTS[client_id]
+                            client.online = True
 
-                    self.send(conn, "online")
-                    time.sleep(0.1)
-                    self.send(conn, f"Successefuly logged in: login - {login}, password - {password}.")
-                    time.sleep(0.1)
+                            self.send(conn, "online")
+                            print('Logged in')
 
-                    create_thread(self.files_send_thread, (client_id,), name_extra=f"{client.username}")
-                    create_thread(self.files_recv_thread, (client_id,), name_extra=f"{client.username}")
+                            create_thread(self.files_send_thread, (client_id,), name_extra=f"{client.username}")
+                            create_thread(self.files_recv_thread, (client_id,), name_extra=f"{client.username}")
+                    if client.online:
+                        if msg[:4] == "path":
+                            path = msg.replace("path ", "")
+                            if client.files_recv_queue.count(path) == 0:
+                                client.files_recv_queue.append(path)
+                            self.files_send_queue_update(path, client_id)
+                        elif msg[:3] == "dir":
+                            path = msg.replace("dir ", "")
+                            user_id = db_conn.execute(f'SELECT userId FROM Users WHERE clientId = {client_id}').fetchone()[0]
+                            dir_list = os.listdir(f'users/{path}')
+                            print(dir_list)
 
+                            # adds accessed dirs
+                            accessed_files = db_conn.execute(f'SELECT path FROM Accesses WHERE guestId = {user_id}').fetchall()
+                            file_dirs = path.split('/')
+                            for file_path in accessed_files:
+                                accessed_file_dirs = file_path.split('/')
+                                show = True
+                                for i in range(0, len(file_dirs) - 1):
+                                    if not accessed_file_dirs[i] == file_dirs[i]:
+                                        show = False
+                                        break
+                                if show: 
+                                    dir_list.append(accessed_file_dirs[i+1])
+                            print(dir_list)
 
-            if client.online:
-                if msg[:4] == "path":
-                    path = msg.replace("path ", "")
-                    if client.files_recv_queue.count(path) == 0:
-                        client.files_recv_queue.append(path)
-                # recv online commands will be here
-
-            # id = self.CLIENTS.index(client)
-            # print(f"{id}.{client.username} - {client.ip}: {msg}")
-
+                            dir_string = "dir"
+                            for dir in dir_list:
+                                dir_string += " " + dir
+                            self.send(client.conn_msgs, dir_string)
+                        # recv online commands will be here
         
         print(f"{client_id}. {client.username} - {client.ip} disconnecting...")
         self.CLIENTS[client_id] = []
@@ -183,15 +211,6 @@ class Server:
         except:
             pass
         print("handle_msgs_thread stopped.")
-
-
-    def send_all(self, msg):
-        for client in self.CLIENTS:
-            if client:
-                self.send(client.conn_msgs, msg)
-
-    def send(self, conn, msg):
-        conn.send(msg.encode(self.FORMAT, errors= 'ignore'))
 
     def files_send_thread(self, client_id):
         while True:
@@ -204,7 +223,6 @@ class Server:
                     path = client.files_send_queue[0]
                     # print(f"File '{path}' started sending...")
                     self.send(client.conn_msgs, "path " + path)
-                    time.sleep(0.1)
                     try:
                         file = open(path, "rb")
                         data = file.read()
@@ -228,7 +246,7 @@ class Server:
             try:
                 path = client.files_recv_queue[0]
                 # print(f"File '{path}' started downloading...")
-                file = open(f"new/{path}", "wb")
+                file = open(f"{path}", "wb")
                 fbytes = b""
                 while True:
                     data = client.conn_files.recv(self.SIZE)
@@ -242,20 +260,35 @@ class Server:
                 client.files_recv_queue.remove(path)
             except:
                 time.sleep(0.1)
+    
+    def files_send_queue_update(self, path, who_updated_client_id):
+        db_conn = sqlite3.connect('Server.db')
+        guests = db_conn.execute(f'SELECT guestId FROM Accesses WHERE path = "{path}"').fetchall()
+        for guestId in guests:
+            guestId = guestId[0]
+            client_id = db_conn.execute(f'SELECT clientId FROM Users WHERE userId = {guestId}').fetchone()[0]
+            if client_id < len(self.CLIENTS):
+                client = self.CLIENTS[client_id]
+                if client and client.files_send_queue.count(path) == 0:
+                    client.files_send_queue.append(path)
+        # checking if it wasn't creator who updated file
+        creator_login = path.split('/')[0]
+        creator_client_id = db_conn.execute(f'SELECT clientId FROM Users WHERE login = "{creator_login}"').fetchone()[0]
+        if not creator_client_id == who_updated_client_id:
+            if creator_client_id < len(self.CLIENTS):
+                client = self.CLIENTS[creator_client_id]
+                if client and client.files_send_queue.count(path) == 0:
+                    client.files_send_queue.append(path)
+        db_conn.close()
 
-    def files_send_queue_updater_thread(self):
-        while True:
-            db_conn = sqlite3.connect('Server.db')
-            accesses = db_conn.execute('SELECT path, guestId FROM Accesses').fetchall()
-            for access in accesses:
-                path = access[0]
-                client_id = db_conn.execute(f'SELECT clientId FROM Users WHERE userId = {access[1]}').fetchone()[0]
-                if client_id < len(self.CLIENTS):
-                    client = self.CLIENTS[client_id]
-                    if client and client.files_send_queue.count(path) == 0:
-                        client.files_send_queue.append(path)
-            db_conn.close()
-            time.sleep(0.1)
+    def send(self, conn, msg):
+        msg = msg + "|"
+        conn.send(msg.encode(self.FORMAT, errors= 'ignore'))
+
+    def send_all(self, msg):
+        for client in self.CLIENTS:
+            if client:
+                self.send(client.conn_msgs, msg)
 
 def create_thread(thread_function, args=(), daemon_state='True', name_extra='', start='True'):
     new_thread = threading.Thread(target=thread_function, args=args)
