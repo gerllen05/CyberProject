@@ -362,13 +362,11 @@ def create_thread(thread_function, args=(), daemon_state='True', name_extra='', 
 
 class Client:
     # conn_msgs - socket for text messages, conn_files - socket for files
-    def __init__(self, ip, conn_msgs, conn_files, online=False, files_send_queue=[], files_recv_queue=[]):
+    def __init__(self, ip, conn_msgs, conn_files, online=False):
         self.ip = ip
         self.conn_msgs = conn_msgs
         self.conn_files = conn_files
         self.online = online
-        self.files_send_queue = files_send_queue
-        self.files_recv_queue = files_recv_queue
 
     def info(self):
         print(f"ip: {self.ip}")
@@ -376,8 +374,6 @@ class Client:
         if self.conn_files:
             print(f"conn_files: connected") #{self.conn_files}
         print(f"online: {self.online}") 
-        print(f"files_send_queue: {self.files_send_queue}")
-        print(f"files_recv_queue: {self.files_recv_queue}")
 
 if __name__ == "__main__":
     Server().main()
