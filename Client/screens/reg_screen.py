@@ -1,7 +1,9 @@
 from tkinter import *
 from tkinter import messagebox
-from screens.conts import Colours
 from PIL import Image, ImageTk
+
+from screens.conts import Colours
+from screens.conts import SpecialCharacters
 
 class RegScreen:
     def __init__(self, main_frame, client, login_screen_frame):
@@ -46,27 +48,30 @@ class RegScreen:
     def submit(self):
         login = self.login.get()
         password = self.password.get()
-        if len(login) > 7 and len(password) > 7:
-            send(self.conn, f"reg {login} {password}")
-            messagebox.showinfo('Successefuly registered', f'Your login: {login} \nYour password: {password}')
-            self.go_to_login_screen()
-        else:
+        if len(login) < 8 and len(password) < 8 or any(c in (SpecialCharacters().special_characters) for c in login+password):
             messagebox.showinfo('Invalid data', 'In login and password must be 8 or more digits.')
+        else:
+            self.send(self.conn, f"reg {login} {password}")
+            answer = self.client.conn_msgs.recv(self.client.SIZE).decode(self.client.FORMAT, errors= 'ignore')
+            if not answer == "online":
+                messagebox.showinfo('Error', answer)
+            else:
+                print("Successefuly registered.")
+                messagebox.showinfo('Successefuly registered', f'Your login: {login} \nYour password: {password}')
+                self.go_to_login_screen()
     
     def go_to_login_screen(self):
         self.reg_screen_frame.pack_forget()
         self.login_screen_frame.pack()
 
+    def send(self, conn, msg):
+        msg = msg + "|"
+        conn.send(msg.encode(self.client.FORMAT, errors= 'ignore'))
+
 def add_placeholder(entry, placeholder):
     def click(event):
         entry.delete(0, END)
+        entry.unbind("<Button-1>")
 
     entry.insert(0, placeholder)
     entry.bind("<Button-1>", click)
-
-def send(conn, msg):
-    msg = msg + "|"
-    conn.send(msg.encode('utf-8', errors= 'ignore'))
-
-
-

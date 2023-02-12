@@ -6,7 +6,8 @@ def create_db():
         userId INTEGER PRIMARY KEY AUTOINCREMENT ,
         login STRING NOT NULL ,
         password STRING NOT NULL ,
-        clientId INTEGER )''')
+        clientId INTEGER ,
+        openedFilePath STRING )''')
     conn.execute('''CREATE TABLE IF NOT EXISTS Accesses (
         path STRING NOT NULL ,
         guestId INTEGER NOT NULL ,

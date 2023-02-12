@@ -6,3 +6,7 @@ class Colours:
         self.gray = '#4E4E50'
         self.white = '#D1D7E0'
         self.red = '#C3073F'
+
+class SpecialCharacters:
+    def __init__(self):
+        self.special_characters = "!@#$%^&*()-+?_=,<>/"

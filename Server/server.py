@@ -2,8 +2,8 @@ import socket
 import threading
 import time
 import os
-import tqdm
 import sqlite3
+import shutil
 
 class Server:
     IP = "0.0.0.0"
@@ -12,10 +12,16 @@ class Server:
     SERVER = ()
     SIZE = 4096
     FORMAT = "utf-8"
+    
     CLIENTS = []
     FINISH = False
 
     def main(self):
+        db_conn = sqlite3.connect('Server.db')
+        db_conn.execute(f'UPDATE Users SET clientId = NULL, openedFilePath = NULL')
+        db_conn.commit()
+        db_conn.close()
+        
         print("\nServer is starting...")
         self.SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.SERVER.bind(self.ADDR)
@@ -36,7 +42,6 @@ class Server:
 
     def new_client_thread(self):
         while True:
-            print("Waiting for new client...")
             conn, addr = self.SERVER.accept()
 
             ip = addr[0]
@@ -53,26 +58,20 @@ class Server:
                             pass
             # for conn_msgs
             if for_msgs:
-                # recieving client's username
-                answer = conn.recv(self.SIZE).decode(self.FORMAT, errors='ignore')
-                if answer[:8] == 'Username':
-                    username = answer.replace("Username: ", "")
-                else:
-                    username = 'unknown'
-
-                client = Client(ip, conn, (), username)
+                client = Client(ip, conn, ())
                 self.CLIENTS.append(client)
                 client_id = self.CLIENTS.index(client)
 
-                print(f"\n{client_id}. New msgs connection: {username} - {addr} connected.")
-                create_thread(self.handle_msgs_thread, (client_id,), name_extra=username)
+                print(f"\n{client_id}. New msgs connection: {addr} connected.")
+                create_thread(self.handle_msgs_thread, (client_id,))
             # for conn_files
             else:
                 client = self.CLIENTS[for_files_client_id]
 
-                upd_client = Client(client.ip, client.conn_msgs, conn, client.username)
+                upd_client = Client(client.ip, client.conn_msgs, conn)
                 self.CLIENTS[for_files_client_id] = upd_client
-                print(f"\n{for_files_client_id}. New files connection: {username} - {addr} connected.")
+                print(f"{for_files_client_id}. New files connection: {addr} connected.")
+                print("Waiting for new client...")
                        
     def get_input_thread(self):
         while True:
@@ -81,11 +80,11 @@ class Server:
                 print("Server is closing...")
                 if self.CLIENTS:
                     print("Clients disconnecting:")
-                self.send_all("exit")
+                # self.send_all("exit")
                 self.FINISH = True
-            elif msg[:5] == "kick ":
+            elif msg[:4] == "kick":
                 try:
-                    client = self.CLIENTS[int(msg.replace("kick ", ""))]            
+                    client = self.CLIENTS[int(msg[5:])]            
                     self.send(client.conn_msgs, "exit")
                 except:
                     print("You have to enter available [client_id] after 'kick'.")
@@ -95,12 +94,12 @@ class Server:
                 print(f"\nActive threads: {threading.enumerate()}")
             elif msg == "clients":
                 print(f"\nActive connections:")
-                for cl in self.CLIENTS:
-                    if not cl == []:
-                        print(f"id {self.CLIENTS.index(cl)}. {cl.username} - {cl.ip}")
-            elif msg[:5] == "info ":
+                for client in self.CLIENTS:
+                    if not client == []:
+                        print(f"id {self.CLIENTS.index(client)}. {client.ip}")
+            elif msg[:4] == "info":
                 try:
-                    client = self.CLIENTS[int(msg.replace("info ", ""))]
+                    client = self.CLIENTS[int(msg[5:])]
                     client.info()
                 except:
                     print("You have to enter available [client_id] after 'kick'.")
@@ -119,10 +118,10 @@ class Server:
     def handle_msgs_thread(self, client_id):
         client = self.CLIENTS[client_id]
         conn = client.conn_msgs
-        db_conn = sqlite3.connect('Server.db')
         exit = False
         while not exit:
             msg = conn.recv(self.SIZE).decode(self.FORMAT, errors= 'ignore')
+            db_conn = sqlite3.connect('Server.db')
             msg_list = msg.split("|")
             for msg in msg_list:
                 if msg:
@@ -130,7 +129,7 @@ class Server:
                         exit = True
                         break
                     elif msg[:3] == "reg":
-                        msg = msg.replace("reg ", "")
+                        msg = msg[4:]
                         login = msg.split()[0]
                         password = msg.split()[1]
                         check = db_conn.execute(f'SELECT password FROM Users WHERE login = "{login}"').fetchone() # check if login has already been used
@@ -146,63 +145,148 @@ class Server:
                             self.send(conn, "online")
 
                             os.mkdir(f'users/{login}')
-                            create_thread(self.files_send_thread, (client_id,), name_extra=f"{client.username}")
-                            create_thread(self.files_recv_thread, (client_id,), name_extra=f"{client.username}")
                             print(conn, f"Successefuly registered: login - {login}, password - {password}.")
-                    elif msg[:6] == "log in":
-                        msg = msg.replace("log in ", "")
+                    elif msg[:6] == "log_in":
+                        msg = msg[7:]
                         login = msg.split()[0]
                         password = msg.split()[1]
                         print(f"Logging in: login - {login}, password - {password}...")
                         userId = db_conn.execute(f'SELECT userId FROM Users WHERE login = "{login}" AND password = "{password}"').fetchone()
-                        # previous_client_id = db_conn.execute(f'SELECT clientId FROM Users WHERE userId = {userId}').fetchone()[0]
                         if not userId:
                             self.send(conn, "Login or password is wrong.")
                             print("No such user.")
-                        else:
-                            db_conn.execute(f'UPDATE Users SET clientId = {client_id} WHERE userId = {userId[0]}')
-                            db_conn.commit()
-                            client = self.CLIENTS[client_id]
-                            client.online = True
+                        else: 
+                            previous_client_id = db_conn.execute(f'SELECT clientId FROM Users WHERE userId = {userId[0]}').fetchone()[0]
+                            if not previous_client_id == None:
+                                if self.CLIENTS[previous_client_id]:
+                                    user_not_online = False
+                                    self.send(conn, "This user is already online.")
+                                    print("This user is already online.")
+                                else:
+                                    user_not_online = True
+                            else:
+                                user_not_online = True
+                            if user_not_online:
+                                db_conn.execute(f'UPDATE Users SET clientId = {client_id} WHERE userId = {userId[0]}')
+                                db_conn.commit()
+                                client = self.CLIENTS[client_id]
+                                client.online = True
 
-                            self.send(conn, "online")
-                            print('Logged in')
-
-                            create_thread(self.files_send_thread, (client_id,), name_extra=f"{client.username}")
-                            create_thread(self.files_recv_thread, (client_id,), name_extra=f"{client.username}")
+                                self.send(conn, "online")
+                                print('Logged in.')
                     if client.online:
-                        if msg[:4] == "path":
-                            path = msg.replace("path ", "")
-                            if client.files_recv_queue.count(path) == 0:
-                                client.files_recv_queue.append(path)
-                            self.files_send_queue_update(path, client_id)
+                        if msg == "log_out":
+                            client.online = False
+                            login = db_conn.execute(f'SELECT login FROM Users WHERE clientId = {client_id}').fetchone()[0]
+                            print(f'Logged out: login - {login}')
+                            db_conn.execute(f'UPDATE Users SET clientId = NULL, openedFilePath = NULL WHERE clientId = {client_id}')
+                            db_conn.commit()
+                        elif msg[:4] == "file":
+                            path = db_conn.execute(f'SELECT openedFilePath FROM Users WHERE clientId = {client_id}').fetchone()[0]
+                            self.file_recv(client_id, path)
+                            self.files_send_when_accessed(path, client_id, db_conn)
                         elif msg[:3] == "dir":
-                            path = msg.replace("dir ", "")
+                            path = msg[4:]
                             user_id = db_conn.execute(f'SELECT userId FROM Users WHERE clientId = {client_id}').fetchone()[0]
-                            dir_list = os.listdir(f'users/{path}')
-                            print(dir_list)
+                            login = db_conn.execute(f'SELECT login FROM Users WHERE userId = {user_id}').fetchone()[0]
+                            dir_list = []
+                            if not path:
+                                dir_list.append(login)
+                                print(path)
+                            elif path.split('/')[0] == login:
+                                dir_list = os.listdir(f'users/{path}')
 
                             # adds accessed dirs
                             accessed_files = db_conn.execute(f'SELECT path FROM Accesses WHERE guestId = {user_id}').fetchall()
-                            file_dirs = path.split('/')
                             for file_path in accessed_files:
-                                accessed_file_dirs = file_path.split('/')
-                                show = True
-                                for i in range(0, len(file_dirs) - 1):
-                                    if not accessed_file_dirs[i] == file_dirs[i]:
-                                        show = False
-                                        break
-                                if show: 
-                                    dir_list.append(accessed_file_dirs[i+1])
-                            print(dir_list)
+                                if os.path.exists(f'users/{file_path[0]}'):
+                                    if file_path[0].startswith(path):
+                                        file_path = file_path[0][len(path):]
+                                        dir_list.append(file_path.split('/')[0])
 
                             dir_string = "dir"
                             for dir in dir_list:
                                 dir_string += " " + dir
                             self.send(client.conn_msgs, dir_string)
-                        # recv online commands will be here
-        
-        print(f"{client_id}. {client.username} - {client.ip} disconnecting...")
+                        elif msg[:4] == "open":
+                            path = msg[5:]
+                            try:
+                                file = open(f'users/{path}', "rb")
+                                data = file.read()
+                                client.conn_files.sendall(data)
+                                client.conn_files.send(b"<END>")
+                                file.close()
+                                print(path)
+                                db_conn.execute(f'UPDATE Users SET openedFilePath = "{path}" WHERE clientId = {client_id}')
+                                db_conn.commit()
+                            except Exception as e:
+                                print('ERROR WITH OPENER')
+                                client.conn_files.send(b"<FAIL>")
+                        elif msg[:6] == "create":
+                            msg = msg[7:]
+                            if msg[:6] == "folder":
+                                path = msg[7:]
+                                try:
+                                    os.mkdir(f'users/{path}')
+                                except Exception as e:
+                                    print(e)
+                            elif msg[:4] == "file":
+                                path = msg[5:]
+                                with open(f'users/{path}', 'w') as file:
+                                    pass 
+                        elif msg[:6] == "delete":
+                            path = msg[7:]
+                            self.opened_file_deleted_stop(path, client_id, db_conn)
+                            path = f'users/{path}'
+                            if path.endswith(".txt"):
+                                try:
+                                    os.remove(path)
+                                except Exception as e:
+                                    print(e)
+                            else:
+                                shutil.rmtree(path, ignore_errors=True)
+                        elif msg == "stop":
+                            client.conn_files.send(b"<STOP>")
+                        elif msg[:6] == "access":
+                            msg = msg[7:]
+                            if msg[:4] == "give":
+                                msg = msg[5:]
+                                guest_and_path = msg.split('>')
+                                user_id = db_conn.execute(f'SELECT userId FROM Users WHERE login = "{guest_and_path[0]}"').fetchone()
+                                if not user_id:
+                                    self.send(client.conn_msgs, 'There is no user with such login.')
+                                else: 
+                                    duplicates = db_conn.execute(f'SELECT guestId FROM Accesses WHERE path = "{guest_and_path[1]}" AND guestId = {user_id[0]}').fetchone()
+                                    if duplicates:
+                                        self.send(client.conn_msgs, 'This user already has access to this file.')
+                                    else:
+                                        db_conn.execute(f'INSERT INTO Accesses (path, guestId) VALUES("{guest_and_path[1]}", {user_id[0]})')
+                                        db_conn.commit()
+                                        self.send(client.conn_msgs, 'Success')
+                            elif msg[:6] == "browse":
+                                path = msg[7:]
+                                guests = db_conn.execute(f'SELECT guestId FROM Accesses WHERE path = "{path}"').fetchall()
+
+                                guests_string = 'guests'
+                                for guestId in guests:
+                                    guest_login = db_conn.execute(f'SELECT login FROM Users WHERE userId = {guestId[0]}').fetchone()
+                                    if guest_login:
+                                        guests_string += " " + guest_login[0]
+
+                                self.send(client.conn_msgs, guests_string)
+                            elif msg[:6] == "remove":
+                                msg = msg[7:]
+                                guest_and_path = msg.split('>')
+                                user_id = db_conn.execute(f'SELECT userId FROM Users WHERE login = "{guest_and_path[0]}"').fetchone()
+                                if not user_id:
+                                    self.send(client.conn_msgs, 'There is no user with such login.')
+                                else:
+                                    db_conn.execute(f'DELETE FROM Accesses WHERE path = "{guest_and_path[1]}" AND guestId = {user_id[0]}')
+                                    db_conn.commit()
+                                    self.send(client.conn_msgs, 'Success')
+            db_conn.close()
+
+        print(f"{client_id}. {client.ip} disconnecting...")
         self.CLIENTS[client_id] = []
         db_conn.close()
         try:
@@ -212,77 +296,52 @@ class Server:
             pass
         print("handle_msgs_thread stopped.")
 
-    def files_send_thread(self, client_id):
-        while True:
-            client = self.CLIENTS[client_id]
-            if not client:
-                print("files_send_thread stopped.")
-                break
-            if client:
-                if client.files_send_queue:
-                    path = client.files_send_queue[0]
-                    # print(f"File '{path}' started sending...")
-                    self.send(client.conn_msgs, "path " + path)
-                    try:
-                        file = open(path, "rb")
-                        data = file.read()
-                        client.conn_files.sendall(data)
-                        client.conn_files.send(b"<END>")
-                        file.close()
-                    except Exception as e:
-                        print(e)
-                    try:   
-                        client.files_send_queue.remove(path)
-                    except:
-                        pass
-            time.sleep(0.3)
-
-    def files_recv_thread(self, client_id):
-        while True:
-            client = self.CLIENTS[client_id]
-            if not client:
-                print("files_recv_thread stopped.")
-                break
+    def file_send(self, client_id, path):
+        client = self.CLIENTS[client_id]
+        if client:
             try:
-                path = client.files_recv_queue[0]
-                # print(f"File '{path}' started downloading...")
-                file = open(f"{path}", "wb")
-                fbytes = b""
-                while True:
-                    data = client.conn_files.recv(self.SIZE)
-                    fbytes += data
-                    if fbytes[-5:] == b"<END>":
-                        fbytes = fbytes[:-5]
-                        file.write(fbytes)
-                        break
+                file = open(f'users/{path}', "rb")
+                data = file.read()
+                client.conn_files.sendall(data)
+                client.conn_files.send(b"<END>")
                 file.close()
-                # print(f"File '{path}' finished downloading...")
-                client.files_recv_queue.remove(path)
-            except:
-                time.sleep(0.1)
-    
-    def files_send_queue_update(self, path, who_updated_client_id):
-        db_conn = sqlite3.connect('Server.db')
-        guests = db_conn.execute(f'SELECT guestId FROM Accesses WHERE path = "{path}"').fetchall()
-        for guestId in guests:
-            guestId = guestId[0]
-            client_id = db_conn.execute(f'SELECT clientId FROM Users WHERE userId = {guestId}').fetchone()[0]
-            if client_id < len(self.CLIENTS):
-                client = self.CLIENTS[client_id]
-                if client and client.files_send_queue.count(path) == 0:
-                    client.files_send_queue.append(path)
-        # checking if it wasn't creator who updated file
-        creator_login = path.split('/')[0]
-        creator_client_id = db_conn.execute(f'SELECT clientId FROM Users WHERE login = "{creator_login}"').fetchone()[0]
-        if not creator_client_id == who_updated_client_id:
-            if creator_client_id < len(self.CLIENTS):
-                client = self.CLIENTS[creator_client_id]
-                if client and client.files_send_queue.count(path) == 0:
-                    client.files_send_queue.append(path)
-        db_conn.close()
+            except Exception as e:
+                print(e)
+
+    def file_recv(self, client_id, path):
+        client = self.CLIENTS[client_id]
+        if client:
+            file = open(f"users/{path}", "wb")
+            fbytes = b""
+            while True:
+                data = client.conn_files.recv(self.SIZE)
+                fbytes += data
+                if fbytes[-5:] == b"<END>":
+                    fbytes = fbytes[:-5]
+                    file.write(fbytes)
+                    file.close()
+                    break
+
+    def files_send_when_accessed(self, path, who_updated_client_id, db_conn):
+        guests_client_ids = db_conn.execute(f'SELECT clientId FROM Users WHERE openedFilePath = "{path}"').fetchall()
+
+        for client_id in guests_client_ids:
+            client_id = client_id[0]
+            if (not client_id == who_updated_client_id) and (not client_id == None): 
+                self.file_send(client_id, path)
+            
+    def opened_file_deleted_stop(self, path, who_deleted_client_id, db_conn):
+        guests_client_ids = db_conn.execute(f'SELECT clientId FROM Users WHERE openedFilePath = "{path}"').fetchall()
+
+        for client_id in guests_client_ids:
+            client_id = client_id[0]
+            print (client_id)
+            if (not client_id == who_deleted_client_id):
+                client = self.CLIENTS[client_id] 
+                print(f"SENT STOP to id - {client_id}")
+                client.conn_files.send(b"<STOP>")
 
     def send(self, conn, msg):
-        msg = msg + "|"
         conn.send(msg.encode(self.FORMAT, errors= 'ignore'))
 
     def send_all(self, msg):
@@ -303,11 +362,10 @@ def create_thread(thread_function, args=(), daemon_state='True', name_extra='', 
 
 class Client:
     # conn_msgs - socket for text messages, conn_files - socket for files
-    def __init__(self, ip, conn_msgs, conn_files, username, online=False, files_send_queue=[], files_recv_queue=[]):
+    def __init__(self, ip, conn_msgs, conn_files, online=False, files_send_queue=[], files_recv_queue=[]):
         self.ip = ip
         self.conn_msgs = conn_msgs
         self.conn_files = conn_files
-        self.username = username
         self.online = online
         self.files_send_queue = files_send_queue
         self.files_recv_queue = files_recv_queue
@@ -317,7 +375,6 @@ class Client:
         print(f"conn_msgs: connected") #{self.conn_msgs}
         if self.conn_files:
             print(f"conn_files: connected") #{self.conn_files}
-        print(f"username: {self.username}")
         print(f"online: {self.online}") 
         print(f"files_send_queue: {self.files_send_queue}")
         print(f"files_recv_queue: {self.files_recv_queue}")
