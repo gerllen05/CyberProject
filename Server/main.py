@@ -37,7 +37,7 @@ class Server:
             pass
 
         create_thread(self.new_client_thread)
-        create_thread(self.get_input_thread)
+        # create_thread(self.get_input_thread)
 
         #when the loop finishes, all daemon threads will close
         while not self.FINISH:
