@@ -3,8 +3,9 @@ import time
 
 class Client:
     def __init__(self):
-        self.IP = "104.196.232.237"
+        # self.IP = "104.196.232.237"
         # self.IP = "172.17.3.31"
+        self.IP = "127.0.0.1"
         self.PORT = 25565
         self.SIZE = 4096
         self.FORMAT = "utf-8"

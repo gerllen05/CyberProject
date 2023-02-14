@@ -4,10 +4,8 @@ import time
 import os
 import sqlite3
 import shutil
-import subprocess
 from bcrypt import hashpw, checkpw, gensalt
 from datetime import datetime
-from contextlib import closing
 
 class Server:
     IP = "0.0.0.0"
@@ -31,8 +29,8 @@ class Server:
 
         hostname = socket.gethostname()
         ip_address = socket.gethostbyname(hostname)
-        print(hostname, ':',ip_address)
-        self.IP = '104.196.232.237'
+        print(hostname, ':', ip_address)
+        self.IP = ip_address
 
         self.SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.SERVER.bind(self.ADDR)
