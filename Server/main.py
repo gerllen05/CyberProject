@@ -9,7 +9,7 @@ from datetime import datetime
 
 class Server:
     IP = "0.0.0.0"
-    PORT = 3436
+    PORT = 25565
     ADDR = (IP, PORT)
     SERVER = ()
     SIZE = 4096
