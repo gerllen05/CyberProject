@@ -1,8 +1,1 @@
-bcrypt
-socket
-threading
-time
-os
-sqlite3
-shutil
-datetime
+bcrypt = 4.0.1
