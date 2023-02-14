@@ -26,6 +26,9 @@ class Server:
         db_conn.close()
         
         print("\nStarting server...")
+        hostname = socket.gethostname()
+        ip_address = socket.gethostbyname(hostname)
+        print(hostname, ': ',ip_address)
         self.SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.SERVER.bind(self.ADDR)
         self.SERVER.listen()
