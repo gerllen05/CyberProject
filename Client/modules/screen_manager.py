@@ -6,7 +6,6 @@ from screens.login_screen import LoginScreen
 from screens.utils import Colours
 from screens.utils import Utils
 
-
 class ScreenManager:
     def __init__(self, client):
         self.conn_msgs = client.conn_msgs
