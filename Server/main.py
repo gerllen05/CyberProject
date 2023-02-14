@@ -29,7 +29,13 @@ class Server:
         hostname = socket.gethostname()
         ip_address = socket.gethostbyname(hostname)
         print(hostname, ':',ip_address)
+
         self.SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        result = self.SERVER.connect_ex(self.ADDR)
+        if result == 0:
+            print ("Port is open")
+        else:
+            print ("Port is not open")
         self.SERVER.bind(self.ADDR)
         self.SERVER.listen()
         print(f"Listening: {self.IP}:{self.PORT}")
