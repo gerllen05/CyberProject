@@ -3,8 +3,8 @@ import time
 
 class Client:
     def __init__(self):
-        self.IP = "192.168.2.115"
-        self.PORT = 8000
+        self.IP = "172.17.2.116"
+        self.PORT = 3436
         self.SIZE = 4096
         self.FORMAT = "utf-8"
         self.ICON = 'icons/Network Drive.ico'

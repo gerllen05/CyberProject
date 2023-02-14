@@ -9,7 +9,7 @@ from datetime import datetime
 
 class Server:
     IP = "0.0.0.0"
-    PORT = 8000
+    PORT = 3436
     ADDR = (IP, PORT)
     SERVER = ()
     SIZE = 4096
@@ -28,7 +28,7 @@ class Server:
         print("\nStarting server...")
         hostname = socket.gethostname()
         ip_address = socket.gethostbyname(hostname)
-        print(hostname, ': ',ip_address)
+        print(hostname, ':',ip_address)
         self.SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.SERVER.bind(self.ADDR)
         self.SERVER.listen()
