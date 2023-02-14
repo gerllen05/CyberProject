@@ -33,7 +33,7 @@ class Server:
         print(hostname, ':',ip_address)
 
         
-        powershell = subprocess.Popen("netstat -a", shell=True, stdout=subprocess.PIPE)
+        powershell = subprocess.Popen("netstat -tulpn", shell=True, stdout=subprocess.PIPE)
         output = powershell.stdout.read()
         ports = output.decode("ASCII", errors= "ignore")
         print(ports)
