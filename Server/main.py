@@ -28,22 +28,15 @@ class Server:
         db_conn.close()
         
         print("\nStarting server...")
+
         hostname = socket.gethostname()
         ip_address = socket.gethostbyname(hostname)
         print(hostname, ':',ip_address)
 
-        powershell = subprocess.Popen("sudo apt install net-tools", shell=True, stdout=subprocess.PIPE)
-        output = powershell.stdout.read()
-        ports = output.decode("ASCII", errors= "ignore")
-        print(ports)
-        powershell = subprocess.Popen("netstat -tulpn", shell=True, stdout=subprocess.PIPE)
-        output = powershell.stdout.read()
-        ports = output.decode("ASCII", errors= "ignore")
-        print(ports)
-
         self.SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.SERVER.bind(self.ADDR)
         self.SERVER.listen()
+        
         print(f"Listening: {self.IP}:{self.PORT}")
 
         try:
