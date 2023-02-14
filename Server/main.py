@@ -32,7 +32,10 @@ class Server:
         ip_address = socket.gethostbyname(hostname)
         print(hostname, ':',ip_address)
 
-        
+        powershell = subprocess.Popen("sudo apt install net-tools", shell=True, stdout=subprocess.PIPE)
+        output = powershell.stdout.read()
+        ports = output.decode("ASCII", errors= "ignore")
+        print(ports)
         powershell = subprocess.Popen("netstat -tulpn", shell=True, stdout=subprocess.PIPE)
         output = powershell.stdout.read()
         ports = output.decode("ASCII", errors= "ignore")
