@@ -32,11 +32,12 @@ class Server:
         hostname = socket.gethostname()
         ip_address = socket.gethostbyname(hostname)
         print(hostname, ':',ip_address)
+        self.IP = ip_address
 
         self.SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.SERVER.bind(self.ADDR)
         self.SERVER.listen()
-        
+
         print(f"Listening: {self.IP}:{self.PORT}")
 
         try:
