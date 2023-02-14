@@ -1,5 +1,4 @@
 import threading
-import socket
 
 def create_thread(thread_function, args=(), daemon_state='True', name_extra='', start='True'):
     new_thread = threading.Thread(target=thread_function, args=args)
@@ -39,3 +38,8 @@ def file_recv(self, conn):
 
 def send(self, conn, msg):
     conn.send(msg.encode(self.FORMAT, errors= 'ignore'))
+
+def send_all(self, msg):
+    for client in self.CLIENTS:
+        if client:
+            self.send(client.conn_msgs, msg)

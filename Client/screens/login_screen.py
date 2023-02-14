@@ -2,7 +2,8 @@ from tkinter import *
 from tkinter import messagebox
 from PIL import Image, ImageTk
 
-from screens.conts import Colours
+from screens.utils import Colours
+from screens.utils import Utils
 from screens.reg_screen import RegScreen
 from screens.dir_screen import DirScreen
 
@@ -29,22 +30,20 @@ class LoginScreen:
 
         self.login = StringVar()
         login_input = Entry(frame, textvariable=self.login, bg=Colours().gray, fg=Colours().white, font=("Calibri", 50))
-        # add_placeholder(login_input, 'Enter login')
-        add_placeholder(login_input, 'admin')
+        Utils().add_placeholder(login_input, 'Enter login')
+        # Utils().add_placeholder(login_input, 'adminadmin')
         login_input.grid(row=1, column=0, padx=20, pady=10)
         self.password = StringVar()
         password_input = Entry(frame, textvariable=self.password, bg=Colours().gray, fg=Colours().white, font=("Calibri", 50))
-        # add_placeholder(password_input, 'Enter password')
-        add_placeholder(password_input, 'admin')
+        Utils().add_placeholder(password_input, 'Enter password')
+        # Utils().add_placeholder(password_input, 'a9@sdf8$98')
         password_input.grid(row=2, column=0, padx=20, pady=10)
 
-        submit_button = Button(frame, text='Log In', bg=Colours().gray, fg=Colours().white, font=("Calibri", 30), command=self.submit_method)
+        submit_button = Button(frame, text='Log in', bg=Colours().gray, fg=Colours().white, font=("Calibri", 30), command=self.submit_method)
         submit_button.grid(row=3, column=0, pady=10)
 
-        empty = Label(self.login_screen_frame, text="", bg=Colours().black, fg=Colours().red, font=("Calibri", 30))
-        empty.pack(pady=40)
         reg_label = Label(self.login_screen_frame, text="You don't have an account?", bg=Colours().black, fg=Colours().red, font=("Calibri", 30))
-        reg_label.pack()
+        reg_label.pack(pady=(100,0))
         reg_button = Button(self.login_screen_frame, text='Register', bg=Colours().gray, fg=Colours().white, font=("Calibri", 30), command=self.go_to_reg_screen)
         reg_button.pack()
 
@@ -76,14 +75,6 @@ class LoginScreen:
     def send(self, conn, msg):
         msg = msg + "|"
         conn.send(msg.encode(self.client.FORMAT, errors= 'ignore'))
-
-def add_placeholder(entry, placeholder):
-    def click(event):
-        entry.delete(0, END)
-        entry.unbind("<Button-1>")
-
-    entry.insert(0, placeholder)
-    entry.bind("<Button-1>", click)
 
 if __name__ == "__main__":
     root = Tk()

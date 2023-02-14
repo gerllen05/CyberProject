@@ -7,10 +7,14 @@ def create_db():
         login STRING NOT NULL ,
         password STRING NOT NULL ,
         clientId INTEGER ,
-        openedFilePath STRING )''')
+        openedFilePath STRING ,
+        regTime STRING NOT NULL ,
+        lastLogInTime STRING )''')
     conn.execute('''CREATE TABLE IF NOT EXISTS Accesses (
-        path STRING NOT NULL ,
+        creatorId INTEGER NOT NULL ,
         guestId INTEGER NOT NULL ,
+        path STRING NOT NULL ,
+        FOREIGN KEY (creatorId) REFERENCES Users (userId) ,
         FOREIGN KEY (guestId) REFERENCES Users (userId) )''')
     conn.close()
 

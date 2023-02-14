@@ -2,10 +2,9 @@ from tkinter import *
 from tkinter import messagebox
 from PIL import Image, ImageTk
 from time import sleep
-import os
-import threading
 
-from screens.conts import Colours
+from screens.utils import Colours
+from screens.utils import Utils
 
 class EditScreen:
     def __init__(self, main_frame, client, DirScreen, file_data):
@@ -38,8 +37,8 @@ class EditScreen:
         self.data_input.config(yscrollcommand= scrollbar.set)
         scrollbar.config(command=self.data_input.yview)
 
-        create_thread(self.get_file)
-        create_thread(self.send_file_when_changed)
+        Utils().create_thread(self.get_file)
+        Utils().create_thread(self.send_file_when_changed)
 
     def save_and_exit(self):
         self.send(self.conn_msgs, 'stop')
@@ -99,30 +98,16 @@ class EditScreen:
 
     def go_to_dir_screen(self):
         self.edit_screen_frame.destroy()
-        current_len = len(self.dir_screen.path.split('/')[-1])
-        self.dir_screen.path = self.dir_screen.path[:len(self.dir_screen.path) - current_len]
+        path = self.conn_msgs.recv(self.client.SIZE).decode(self.client.FORMAT, errors= 'ignore')
+        if path == "!stop":
+            current_len = len(self.dir_screen.path.split('/')[-1])
+            self.dir_screen.path = self.dir_screen.path[:len(self.dir_screen.path) - current_len]
+        else:
+            self.dir_screen.path = path
+        self.dir_screen.update_dirs()
         self.dir_screen.path_label.configure(text='Path: '+self.dir_screen.path)
         self.dir_screen.dir_screen_frame.pack()
 
     def send(self, conn, msg):
         msg = msg + "|"
         conn.send(msg.encode(self.client.FORMAT, errors= 'ignore'))
-
-def add_placeholder(entry, placeholder):
-    def click(event):
-        entry.delete(0, END)
-        entry.unbind("<Button-1>")
-
-    entry.insert(0, placeholder)
-    entry.bind("<Button-1>", click)
-
-def create_thread(thread_function, args=(), daemon_state='True', name_extra='', start='True'):
-    new_thread = threading.Thread(target=thread_function, args=args)
-    new_thread.daemon = daemon_state
-    if not name_extra:
-        new_thread.name = thread_function.__name__
-    else:
-        new_thread.name = thread_function.__name__ + " " + name_extra
-    if start:
-        new_thread.start()
-    return new_thread
