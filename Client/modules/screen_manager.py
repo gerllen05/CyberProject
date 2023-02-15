@@ -22,7 +22,7 @@ class ScreenManager:
             height = self.root.winfo_screenheight()
             self.root.geometry(f'{width}x{height}+0+0')
             self.root.resizable(width=True, height=True)
-            self.root.iconbitmap('D:/usr/documents/Desktop/Школа/י1/Cyber/CyberProject/Client/icons/Network Drive.ico')
+            # self.root.iconbitmap('D:/usr/documents/Desktop/Школа/י1/Cyber/CyberProject/Client/icons/Network Drive.ico')
             self.root.configure(bg=Colours().black)
             
 
