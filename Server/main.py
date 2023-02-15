@@ -120,6 +120,7 @@ class Server:
         exit = False
         while not exit:
             msg = conn.recv(self.SIZE).decode(self.FORMAT, errors= 'ignore')
+            print(msg)
             db_conn = sqlite3.connect('Server.db')
             msg_list = msg.split("|")
             for msg in msg_list:
