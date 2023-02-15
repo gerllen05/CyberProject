@@ -1,12 +1,12 @@
 import socket
-import time
+from time import sleep
 
 class Client:
     def __init__(self):
         # self.IP = "104.196.232.237"
         # self.IP = "172.17.3.31"
-        self.IP = "127.0.0.1"
-        self.PORT = 25565
+        self.IP = "cyberproject-production.up.railway.app"
+        self.PORT = 80
         self.SIZE = 4096
         self.FORMAT = "utf-8"
         self.ICON = 'icons/Network Drive.ico'
@@ -30,7 +30,7 @@ class Client:
                 break
             except:
                 pass
-            time.sleep(0.1)
+            sleep(0.1)
 
 if __name__ == "__main__":
     Client().main()
