@@ -3,16 +3,14 @@ from time import sleep
 
 class Client:
     def __init__(self):
-        # self.IP = "104.196.232.237"
-        # self.IP = "172.17.3.31"
+        # self.IP = "127.0.0.1"
         self.IP = "cyberproject-production.up.railway.app"
         self.PORT = 80
         self.SIZE = 4096
         self.FORMAT = "utf-8"
-        self.ICON = 'icons/Network Drive.ico'
 
         self.login = ''
-        self.opened_file_path = "popopopa/path.txt"
+        # self.opened_file_path = "popopopa/path.txt"
 
         self.conn_msgs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.conn_files = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
