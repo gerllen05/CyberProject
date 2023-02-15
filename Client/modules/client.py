@@ -10,7 +10,7 @@ class Client:
         self.FORMAT = "utf-8"
 
         self.login = ''
-        # self.opened_file_path = "popopopa/path.txt"
+        # self.opened_file_path = "popopopa/path.txt" 123
 
         self.conn_msgs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.conn_files = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
