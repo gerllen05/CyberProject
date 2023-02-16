@@ -48,7 +48,8 @@ class Server:
 
         #when the loop finishes, all daemon threads will close
         while not self.FINISH:
-            time.sleep(0.1)
+            time.sleep(10)
+            print(threading.enumerate())
         
         print("Server closed.")
 
