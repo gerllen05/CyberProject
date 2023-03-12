@@ -3,9 +3,9 @@ from time import sleep
 
 class Client:
     def __init__(self):
-        # self.IP = "127.0.0.1"
-        self.IP = "cyberproject-production.up.railway.app"
-        self.PORT = 80
+        self.IP = "127.0.0.1"
+        # self.IP = "cyberproject-production.up.railway.app"
+        self.PORT = 8000
         self.SIZE = 4096
         self.FORMAT = "utf-8"
 

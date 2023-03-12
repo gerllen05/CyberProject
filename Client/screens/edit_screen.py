@@ -71,7 +71,7 @@ class EditScreen:
                     self.close = True
                     self.go_to_dir_screen()
                     return
-            print(f"File finished downloading...")
+            # print(f"File finished downloading...")
 
             file_data = file_bytes.decode(self.client.FORMAT)
 
@@ -88,7 +88,7 @@ class EditScreen:
                 if data:
                     data = data[:-1]
                 if not data == self.last_file_data:
-                    print(f"File started sending...")
+                    # print(f"File started sending...")
                     self.send(self.conn_msgs, "file")
                     self.last_file_data = data
                     data = data.encode(self.client.FORMAT, errors= 'ignore')

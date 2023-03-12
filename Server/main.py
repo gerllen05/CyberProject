@@ -9,7 +9,7 @@ from datetime import datetime
 
 class Server:
     IP = "0.0.0.0"
-    PORT = int(os.getenv("PORT"))
+    PORT = 8000
     ADDR = (IP, PORT)
     SERVER = ()
     SIZE = 4096
@@ -27,10 +27,10 @@ class Server:
         
         print("\nStarting server...")
 
-        hostname = socket.gethostname()
-        ip_address = socket.gethostbyname(hostname)
-        print(hostname, ':', ip_address)
-        self.IP = ip_address
+        # hostname = socket.gethostname()
+        # ip_address = socket.gethostbyname(hostname)
+        # print(hostname, ':', ip_address)
+        # self.IP = ip_address
 
         self.SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.SERVER.bind(self.ADDR)
@@ -49,7 +49,6 @@ class Server:
         #when the loop finishes, all daemon threads will close
         while not self.FINISH:
             time.sleep(10)
-            print(threading.enumerate())
         
         print("Server closed.")
 
@@ -121,7 +120,7 @@ class Server:
         exit = False
         while not exit:
             msg = conn.recv(self.SIZE).decode(self.FORMAT, errors= 'ignore')
-            print(msg)
+            # print(msg)
             db_conn = sqlite3.connect('Server.db')
             msg_list = msg.split("|")
             for msg in msg_list:
