@@ -1,4 +1,4 @@
-from tkinter import font
+from tkinter import Button, Checkbutton
 from threading import Thread
 
 class Colours:
@@ -7,6 +7,15 @@ class Colours:
         self.gray = '#4E4E50'
         self.white = '#D1D7E0'
         self.red = '#C3073F'
+
+class CustomButton:
+    def __init__(self, frame, text, command, checkbutton=False, bg=Colours().gray, fg=Colours().white, font=("Calibri", 30), activebackground=Colours().white, activeforeground=Colours().gray):
+        if not checkbutton:
+            self.button = Button(frame, text=text, bg=bg, fg=fg, font=font, command=command, activebackground=activebackground, activeforeground=activeforeground)
+        else:
+            self.button = Checkbutton(frame, text=text, bg=bg, fg=fg, font=font, command=command, activebackground=activebackground, activeforeground=activeforeground)
+
+
 
 class Utils:
     def __init__(self):
@@ -23,10 +32,13 @@ class Utils:
             new_thread.start()
         return new_thread
     
-    def add_placeholder(self, entry, placeholder):
+    def add_placeholder(self, entry, placeholder, is_password=False):
         def click(event):
             entry.delete(0, 'end')
+            if is_password:
+                entry.config(show='*')
             entry.unbind("<Button-1>")
+            
 
         entry.insert(0, placeholder)
         entry.bind("<Button-1>", click)

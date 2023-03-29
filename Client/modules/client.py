@@ -30,5 +30,24 @@ class Client:
                 pass
             sleep(0.1)
 
+    def send_msg(self, msg: str):
+        msg = msg + "|"
+        self.conn_msgs.send(msg.encode(self.FORMAT, errors= 'ignore'))
+
+    def recv_msg(self):
+        msg = self.conn_msgs.recv(self.SIZE).decode(self.FORMAT, errors= 'ignore')
+        return msg
+    
+    def send_file(self, data: str):
+        size = len(data)
+        self.send_msg(f"file {size}")
+        data = data.encode(self.FORMAT, errors= 'ignore')
+        self.conn_files.sendall(data)
+
+    def recv_file(self, size: int):
+        data = self.conn_files.recv(size)
+        file_data = data.decode(self.FORMAT, errors= 'ignore')
+        return file_data
+
 if __name__ == "__main__":
     Client().main()

@@ -2,14 +2,12 @@ from tkinter import *
 from tkinter import messagebox
 from PIL import Image, ImageTk
 
-from screens.utils import Colours
-from screens.utils import Utils
+from screens.utils import Colours, CustomButton, Utils
 
 class RegScreen:
     def __init__(self, main_frame, client, login_screen_frame):
         self.main_frame = main_frame
         self.client = client
-        self.conn = client.conn_msgs
         self.login_screen_frame = login_screen_frame
 
         self.reg_screen_frame = Frame(main_frame, bg=Colours().black)
@@ -40,12 +38,12 @@ class RegScreen:
         Utils().add_placeholder(password_check_input, 'Enter password again')
         password_check_input.grid(row=3, column=0, padx=20, pady=10)
 
-        submit_button = Button(frame, text='Register', bg=Colours().gray, fg=Colours().white, font=("Calibri", 30), command=self.submit)
+        submit_button = CustomButton(frame, text='Register', command=self.submit).button
         submit_button.grid(row=4, column=0, pady=10)
 
         login_label = Label(self.reg_screen_frame, text="You already have an account?", bg=Colours().black, fg=Colours().red, font=("Calibri", 30))
         login_label.pack(pady=(50,0))
-        login_button = Button(self.reg_screen_frame, text='Log in', bg=Colours().gray, fg=Colours().white, font=("Calibri", 30), command=self.go_to_login_screen)
+        login_button = CustomButton(self.reg_screen_frame, text='Log in', command=self.go_to_login_screen).button
         login_button.pack()
 
     def submit(self):
@@ -57,8 +55,8 @@ class RegScreen:
         elif len(login) < 8 and len(password) < 8 or any(c in (Utils().special_characters) for c in login+password):
             messagebox.showinfo('Invalid data', 'In login and password must be 8 or more digits.')
         else:
-            self.send(self.conn, f"reg {login} {password}")
-            answer = self.client.conn_msgs.recv(self.client.SIZE).decode(self.client.FORMAT, errors= 'ignore')
+            self.client.send_msg(f"reg {login} {password}")
+            answer = self.client.recv_msg()
             if not answer == "online":
                 messagebox.showinfo('Error', answer)
             else:
@@ -69,7 +67,3 @@ class RegScreen:
     def go_to_login_screen(self):
         self.reg_screen_frame.pack_forget()
         self.login_screen_frame.pack()
-
-    def send(self, conn, msg):
-        msg = msg + "|"
-        conn.send(msg.encode(self.client.FORMAT, errors= 'ignore'))
