@@ -65,7 +65,6 @@ class LoginScreen:
             if answer == "online":
                 print("Successefuly logged in.")
                 messagebox.showinfo('Successefuly logged in', f'Your login: {login} \nYour password: {password}')
-                self.client.create_online_threads = True
                 self.client.login = login
                 self.go_to_dir_screen()
             else:

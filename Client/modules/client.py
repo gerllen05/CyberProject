@@ -4,13 +4,11 @@ from time import sleep
 class Client:
     def __init__(self):
         self.IP = "127.0.0.1"
-        # self.IP = "cyberproject-production.up.railway.app"
         self.PORT = 8000
         self.SIZE = 4096
         self.FORMAT = "utf-8"
 
         self.login = ''
-        # self.opened_file_path = "popopopa/path.txt" 123
 
         self.conn_msgs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.conn_files = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
