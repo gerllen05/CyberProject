@@ -1,3 +1,4 @@
 /Server/users
+/Server/Server.db
 *.pyc
 
