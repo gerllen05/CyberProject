@@ -40,33 +40,24 @@ class Client:
 
     def recv_msg(self):
         msg_encrypted = self.conn_msgs.recv(self.SIZE)
-        print(msg_encrypted)
         msg_bytes = self.encrypter.decrypt(msg_encrypted)
         msg = msg_bytes.decode(self.FORMAT, errors= 'ignore')
-        print(msg)
         return msg
     
     def send_file(self, data: str):
         data_bytes = data.encode(self.FORMAT, errors= 'ignore')
-        size = len(data_bytes)
+        data_encrypted = self.encrypter.encrypt(data_bytes)
+        size = len(data_encrypted)
         self.send_msg(f"file {size}")
-        for i in range(0, len(data_bytes), self.SIZE):
-            chunk = data_bytes[i:i+self.SIZE]
-            data_encrypted = self.encrypter.encrypt(chunk)
-            self.conn_files.send(data_encrypted)
-            sleep(0.1)
+        self.conn_files.send(data_encrypted)
 
     def recv_file(self, size: int):
-        data = ""
-        while size:
-            data_encrypted = self.conn_files.recv(self.SIZE)
-            if not data_encrypted:
-                data_bytes = data_encrypted
-            else:
-                data_bytes = self.encrypter.decrypt(data_encrypted)
-            chunk = data_bytes.decode(self.FORMAT, errors= 'ignore')
-            size -= len(chunk)
-            data += chunk
+        data_encrypted = self.conn_files.recv(size)
+        if not data_encrypted:
+            data_bytes = data_encrypted
+        else:
+            data_bytes = self.encrypter.decrypt(data_encrypted)
+        data = data_bytes.decode(self.FORMAT, errors= 'ignore')
         return data
 
 

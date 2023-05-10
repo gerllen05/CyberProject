@@ -1,5 +1,4 @@
 from encrypter import Encrypter
-from time import sleep
 
 class Client:
     SIZE = 2048
@@ -32,23 +31,16 @@ class Client:
         return msg
     
     def send_file(self, data_bytes: str):
-        size = len(data_bytes)
+        data_encrypted = self.encrypter.encrypt(data_bytes)
+        size = len(data_encrypted)
         self.send_msg(f"file {size}")
-        for i in range(0, len(data_bytes), self.SIZE):
-            chunk = data_bytes[i:i+self.SIZE]
-            data_encrypted = self.encrypter.encrypt(chunk)
-            self.conn_files.send(data_encrypted)
-            sleep(0.1)
+        self.conn_files.send(data_encrypted)
 
     def recv_file(self, size: int):
-        data = b""
-        while size:
-            data_encrypted = self.conn_files.recv(self.SIZE)
-            if not data_encrypted:
-                data_bytes = data_encrypted
-            else:
-                data_bytes = self.encrypter.decrypt(data_encrypted)
-            size -= len(data_bytes)
-            data += data_bytes
-        return data
+        data_encrypted = self.conn_files.recv(size)
+        if not data_encrypted:
+            data_bytes = data_encrypted
+        else:
+            data_bytes = self.encrypter.decrypt(data_encrypted)
+        return data_bytes
    

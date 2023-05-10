@@ -47,8 +47,8 @@ class ScreenManager:
         self.root.destroy()
         self.finished = True
         try:
-            self.send(self.conn_msgs, "log_out")
-            self.send(self.conn_msgs, "exit")
+            self.client.send_msg("log_out")
+            self.client.send_msg("exit")
             self.conn_msgs.close()
             self.conn_files.close()
         except:
