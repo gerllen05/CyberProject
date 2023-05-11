@@ -25,11 +25,9 @@ class ScreenManager:
             # self.root.iconbitmap('D:/usr/documents/Desktop/Школа/י1/Cyber/CyberProject/Client/icons/Network Drive.ico')
             self.root.configure(bg=Colours().black)
             
-
             self.main_frame = Frame(self.root, width=width, height=height, bg=Colours().black)
             self.main_frame.pack()
-            self.login_frame = LoginScreen(self.main_frame, client).login_screen_frame
-            self.login_frame.pack()
+            LoginScreen(self.main_frame, client).login_screen_frame.pack()
 
             self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
             self.root.mainloop()

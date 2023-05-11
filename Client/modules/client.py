@@ -5,6 +5,9 @@ from modules.encrypter import Encrypter
 class Client:
     def __init__(self):
         self.IP = input("Enter server IP: ")
+        if self.IP == "":
+            self.IP = "127.0.0.1"
+            
         self.PORT = 8000
         self.SIZE = 2048
         self.FORMAT = "utf-8"
