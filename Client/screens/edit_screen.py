@@ -1,6 +1,5 @@
 from tkinter import *
 from tkinter import messagebox
-from PIL import Image, ImageTk
 from time import sleep
 
 from screens.utils import Colours, CustomButton, Utils
@@ -16,26 +15,26 @@ class EditScreen:
 
         self.edit_screen_frame = Frame(main_frame, bg=Colours().black)
 
+        self.create_interface()
+        Utils().create_thread(self.get_file)
+        Utils().create_thread(self.send_file_when_changed)
+
+    def create_interface(self):
         top_panel = Frame(self.edit_screen_frame, bg=Colours().gray, highlightbackground=Colours().red, highlightthickness=1)
         top_panel.pack(pady=10)
 
         update_button = CustomButton(top_panel, text='Save and exit', command=self.save_and_exit).button
         update_button.grid(row=0, column=0, padx=10, pady=10)
-        # delete_button = Button(top_panel, text='Delete file', bg=Colours().gray, fg=Colours().white, font=("Calibri", 30), command=self.delete_file)
-        # delete_button.grid(row=0, column=1, padx=10, pady=10)
 
         scrollbar = Scrollbar(self.edit_screen_frame, orient= VERTICAL)
         scrollbar.pack(side=RIGHT, fill=BOTH)
 
         self.data_input = Text(self.edit_screen_frame, bg=Colours().gray, fg=Colours().white, font=("Calibri", 20), width=70, height=25)
-        self.data_input.insert( "1.0", file_data)
+        self.data_input.insert( "1.0", self.last_file_data)
         self.data_input.pack()
 
         self.data_input.config(yscrollcommand= scrollbar.set)
         scrollbar.config(command=self.data_input.yview)
-
-        Utils().create_thread(self.get_file)
-        Utils().create_thread(self.send_file_when_changed)
 
     def save_and_exit(self):
         self.client.send_msg('stop')

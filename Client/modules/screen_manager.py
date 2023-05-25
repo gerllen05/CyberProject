@@ -22,12 +22,9 @@ class ScreenManager:
             height = self.root.winfo_screenheight()
             self.root.geometry(f'{width}x{height}+0+0')
             self.root.resizable(width=True, height=True)
-            # self.root.iconbitmap('D:/usr/documents/Desktop/Школа/י1/Cyber/CyberProject/Client/icons/Network Drive.ico')
             self.root.configure(bg=Colours().black)
             
-            self.main_frame = Frame(self.root, width=width, height=height, bg=Colours().black)
-            self.main_frame.pack()
-            LoginScreen(self.main_frame, client).login_screen_frame.pack()
+            LoginScreen(self.root, client).login_screen_frame.pack()
 
             self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
             self.root.mainloop()
@@ -66,10 +63,6 @@ class ScreenManager:
                 print("- help --> shows all available commands")
             else:
                 print(f"Incorrect command '{msg}': type 'help' to see all commands")
-
-    def send(self, conn, msg):
-        msg = msg + "|"
-        conn.send(msg.encode(self.client.FORMAT, errors= 'ignore'))
 
 if __name__ == "__main__":
     ScreenManager()

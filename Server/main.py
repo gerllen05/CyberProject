@@ -7,7 +7,6 @@ from sqlite3 import connect
 from shutil import rmtree
 from bcrypt import hashpw, checkpw, gensalt
 from datetime import datetime
-from Crypto.Cipher import AES
 
 from database import Database
 from client_class import Client

@@ -16,12 +16,11 @@ class CustomButton:
             self.button = Checkbutton(frame, text=text, bg=bg, fg=fg, font=font, command=command, activebackground=activebackground, activeforeground=activeforeground)
 
 
-
 class Utils:
     def __init__(self):
         self.special_characters = "!@#$%^&*() +?=,<>/"
 
-    def create_thread(self, thread_function, args=(), daemon_state='True', name_extra='', start='True'):
+    def create_thread(self, thread_function, args=(), daemon_state='True', name_extra='', start=True):
         new_thread = Thread(target=thread_function, args=args)
         new_thread.daemon = daemon_state
         if not name_extra:
@@ -39,6 +38,5 @@ class Utils:
                 entry.config(show='*')
             entry.unbind("<Button-1>")
             
-
         entry.insert(0, placeholder)
         entry.bind("<Button-1>", click)

@@ -1,6 +1,6 @@
 import threading
 
-def create_thread(thread_function, args=(), daemon_state='True', name_extra='', start='True'):
+def create_thread(thread_function, args=(), daemon_state='True', name_extra='', start=True):
     new_thread = threading.Thread(target=thread_function, args=args)
     new_thread.daemon = daemon_state
     if not name_extra:

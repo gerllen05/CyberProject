@@ -1,6 +1,5 @@
 from tkinter import *
 from tkinter import messagebox
-from PIL import Image, ImageTk
 
 from screens.utils import Colours, CustomButton, Utils
 
@@ -11,11 +10,9 @@ class RegScreen:
         self.login_screen_frame = login_screen_frame
 
         self.reg_screen_frame = Frame(main_frame, bg=Colours().black)
+        self.create_interface()
 
-        # logo = PhotoImage(file = 'utils/Network Drive.png')
-        # logo_label = Label(root, image=logo)
-        # logo_label.place(x=500, y=500, relwidth=0.3, relheight=0.3)
-
+    def create_interface(self):
         header = Label(self.reg_screen_frame, text="Network Drive", bg=Colours().black, fg=Colours().red, font=("Gabriola", 100))
         header.pack()
 
