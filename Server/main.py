@@ -1,12 +1,13 @@
 from socket import socket, AF_INET, SOCK_STREAM
 from threading import Thread, Lock, enumerate
 from time import sleep
-from os import mkdir, listdir, remove, urandom
+from os import mkdir, listdir, remove
 from os.path import exists
 from sqlite3 import connect
 from shutil import rmtree
 from bcrypt import hashpw, checkpw, gensalt
 from datetime import datetime
+from cryptography.fernet import Fernet
 
 from database import Database
 from client_class import Client
@@ -59,7 +60,7 @@ class Server:
                             pass
             # for conn_msgs
             if for_msgs:
-                key = urandom(32)
+                key = Fernet.generate_key()
                 conn.send(key)
 
                 client = Client(ip, conn, (), key)

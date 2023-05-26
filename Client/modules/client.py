@@ -1,6 +1,6 @@
 import socket
 from time import sleep
-from modules.encrypter import Encrypter
+from cryptography.fernet import Fernet
 
 class Client:
     def __init__(self):
@@ -24,8 +24,8 @@ class Client:
                 self.conn_msgs.connect((self.IP, self.PORT))
                 print(f"Client connected to server at {self.IP}:{self.PORT}.")
 
-                key = self.conn_msgs.recv(32)
-                self.encrypter = Encrypter(key)
+                key = self.conn_msgs.recv(128)
+                self.encrypter = Fernet(key)
 
                 self.conn_files.connect((self.IP, self.PORT))
                 print("File connection established.")

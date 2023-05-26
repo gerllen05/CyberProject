@@ -67,10 +67,10 @@ class EditScreen:
                         self.go_to_dir_screen()
                     return
                 elif msg[:4] == "file":
+                    self.being_changed = True
                     size = int(msg[5:])
                     file_data = self.client.recv_file(size)
 
-                    self.being_changed = True
                     self.last_file_data = file_data
                     self.data_input.delete("1.0","end")
                     self.data_input.insert( "1.0", file_data)
@@ -87,7 +87,7 @@ class EditScreen:
                     # print("File started sending...")
                     self.last_file_data = data
                     self.client.send_file(data)
-            sleep(0.1)
+            sleep(0.01)
 
     def go_to_dir_screen(self, new_path=""):
         self.edit_screen_frame.destroy()
