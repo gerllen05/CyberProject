@@ -12,6 +12,8 @@ class ManageAccessPopUpWindow:
         self.file_name = file_name
         self.path = path
 
+        self.popup_win = Toplevel(self.dir_screen_frame, bg=Colours().black)
+
         self.create_interface()
 
         self.login_listbox.bind('<Double-Button-1>', self.remove_user)
@@ -20,8 +22,6 @@ class ManageAccessPopUpWindow:
         self.popup_win.protocol("WM_DELETE_WINDOW", self.popup_win.destroy)
     
     def create_interface(self):
-        self.popup_win = Toplevel(self.dir_screen_frame, bg=Colours().black)
-
         label = Label(self.popup_win, text="Click twice to remove", bg=Colours().black, fg=Colours().white, font=("Calibri", 20), highlightbackground=Colours().red, highlightthickness=1)
         label.pack(side=TOP, fill=X)
 

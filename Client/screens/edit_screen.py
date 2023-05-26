@@ -16,8 +16,8 @@ class EditScreen:
         self.edit_screen_frame = Frame(main_frame, bg=Colours().black)
 
         self.create_interface()
-        Utils().create_thread(self.get_file)
-        Utils().create_thread(self.send_file_when_changed)
+        Utils().create_thread(self.get_file_thread)
+        Utils().create_thread(self.send_file_when_changed_thread)
 
     def create_interface(self):
         top_panel = Frame(self.edit_screen_frame, bg=Colours().gray, highlightbackground=Colours().red, highlightthickness=1)
@@ -53,31 +53,30 @@ class EditScreen:
                 messagebox.showinfo('File deleted', "You will be transfered back to directory screen.")
         self.go_to_dir_screen()
 
-    def get_file(self):
+    def get_file_thread(self):
         while not self.close:
-            while True:
-                msg = self.client.recv_msg()
-                if msg[:4] == "stop":
-                    # print("Stopped using file")
-                    self.close = True
-                    if len(msg) > 5:
-                        new_path = msg[5:]
-                        self.go_to_dir_screen(new_path)
-                    else:
-                        self.go_to_dir_screen()
-                    return
-                elif msg[:4] == "file":
-                    self.being_changed = True
-                    size = int(msg[5:])
-                    file_data = self.client.recv_file(size)
+            msg = self.client.recv_msg()
+            if msg[:4] == "stop":
+                # print("Stopped using file")
+                self.close = True
+                if len(msg) > 5:
+                    new_path = msg[5:]
+                    self.go_to_dir_screen(new_path)
+                else:
+                    self.go_to_dir_screen()
+                return
+            elif msg[:4] == "file":
+                self.being_changed = True
+                size = int(msg[5:])
+                file_data = self.client.recv_file(size)
 
-                    self.last_file_data = file_data
-                    self.data_input.delete("1.0","end")
-                    self.data_input.insert( "1.0", file_data)
-                    self.being_changed = False
-                    # print(File finished downloading)
+                self.last_file_data = file_data
+                self.data_input.delete("1.0","end")
+                self.data_input.insert( "1.0", file_data)
+                self.being_changed = False
+                # print(File finished downloading)
 
-    def send_file_when_changed(self):
+    def send_file_when_changed_thread(self):
         while not self.close:
             if not self.being_changed:
                 data = self.data_input.get("1.0",'end')
