@@ -54,7 +54,7 @@ class RegScreen:
         else:
             self.client.send_msg(f"reg {login} {password}")
             answer = self.client.recv_msg()
-            if not answer == "online":
+            if not answer == "successful":
                 messagebox.showinfo('Error', answer)
             else:
                 print("Successefuly registered.")

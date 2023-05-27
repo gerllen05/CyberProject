@@ -143,7 +143,7 @@ class Server:
                             db_conn.commit()
                             client = self.CLIENTS[client_id]
                             client.online = True
-                            client.send_msg("online")
+                            client.send_msg("successful")
 
                             mkdir(f'users/{login}')
                             print(f"{client_id}. Successefuly registered: login - {login}, password - {password}.")
@@ -217,7 +217,7 @@ class Server:
                             for dir in dir_list:
                                 dir_string += " " + str(dir)
                             client.send_msg(dir_string)
-                        elif msg[:4] == "open": # when client opens choosed file
+                        elif msg[:4] == "open": # when client opens choosen file
                             path = msg[5:]
                             file = open(f'users/{path}', "rb")
                             data = file.read()
